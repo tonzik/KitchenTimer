@@ -6,28 +6,28 @@
  */
 
 // ------------------------------------------------------------------
-// REQUIRED LIBRARIES
+// VAADITUT KIRJASTOT / REQUIRED LIBRARIES
 // ------------------------------------------------------------------
 
 #include <libSeg47.h>
 #include <Button.h>
 
 // ------------------------------------------------------------------
-// SETTINGS
+// ALKUMÄÄRITYKSET
 // ------------------------------------------------------------------
 
-// 4-digit 7-segment display pins
+// 4-osaisen segmenttinäytön asetukset / 4-digit 7-segment display pins
 libSeg47 segdisp(9,8, 7, 6, 13, 12, 11, 10, 5, 5);
 
-// Rotary encoder pins
-#define outputA 2 // CLK
-#define outputB 3 // DT
-Button outputC (4, 2000); // BTN
+// Pulssi-enkooderin asetukset / Rotary encoder pins
+#define rotCLK 2 // CLK
+#define rotDT 3 // DT
+Button rotBTN (4, 2000); // BTN
 
-// other settings
-int aState;
-int bState;
-int aLastState;
+// Muut asetukset / Other settings
+int dtState;
+int clkState;
+int dtLastState;
 
 int timeset = 0;
 int counter = 0;
@@ -35,7 +35,7 @@ int timerMsg = 0;
 int totalSeconds = 0;
 int minutes = 0;
 int seconds = 0;
-int laskenta = 0;
+int countdown = 0;
 
 String stringOne, stringTwo, stringThree, stringZero;
 
@@ -49,28 +49,28 @@ unsigned long time_now = 0;
 void setup() {
   // put your setup code here, to run once:
 
-  pinMode(outputA, INPUT); // Rotary encoder CLK
-  pinMode(outputB, INPUT); // Rotary encoder DT
+  pinMode(rotCLK, INPUT); // Rotary encoder CLK
+  pinMode(rotDT, INPUT); // Rotary encoder DT
   Serial.begin(9600);
   Serial.println("Program starts");
   
 }
 
 // ------------------------------------------------------------------
-// SET TIMER
+// AJASTIMEN ASETUS / SET TIMER
 // ------------------------------------------------------------------
 
 void setKitchenTimer() {
   segdisp.showNro(timeset);
-  aState = digitalRead(outputB);
-  bState = digitalRead(outputA);
+  dtState = digitalRead(rotDT);
+  clkState = digitalRead(rotCLK);
   
-  if ((aState != aLastState)&&(aState==LOW)) {
-    if (bState == LOW) { 
-      counter = counter + 15;
+  if ((dtState != dtLastState)&&(dtState==LOW)) {
+    if (clkState == LOW) { 
+      counter = counter + 30;
     } 
     else {
-      counter = counter - 15;
+      counter = counter - 30;
     }
 
     if (counter < 0) {
@@ -79,9 +79,9 @@ void setKitchenTimer() {
 
     timeset = calcSecMin(counter);
   }
-  aLastState = aState;
+  dtLastState = dtState;
 
-  if (outputC.pressed()) {
+  if (rotBTN.pressed()) {
     Serial.println("ajastin painettu");
     totalSeconds = counter + 1;
     timerMsg = 2;
@@ -89,7 +89,7 @@ void setKitchenTimer() {
 }
 
 // ------------------------------------------------------------------
-// CALCULATE TOTAL SECONDS TO MINUTES AND SECONDS
+// MUUTETAAN AIKA MINUUTEIKSI JA SEKUNNEIKSI / CALCULATE TOTAL SECONDS TO MINUTES AND SECONDS
 // ------------------------------------------------------------------
 
 int calcSecMin(int totalSeconds) {
@@ -124,7 +124,7 @@ int calcSecMin(int totalSeconds) {
 }
 
 // ------------------------------------------------------------------
-// TIMER DEMO
+// AJASTIMEN DEMO-MOODI / TIMER DEMO
 // ------------------------------------------------------------------
 
 void timerDemo() {
@@ -133,7 +133,7 @@ void timerDemo() {
 }
 
 // ------------------------------------------------------------------
-// TIMER ON
+// AJASTIN PÄÄLLÄ / TIMER ON
 // ------------------------------------------------------------------
 
 void timerOn() {
@@ -159,7 +159,7 @@ void timerOn() {
     }
   
   stringThree = stringTwo + stringOne;
-  laskenta = stringThree.toInt();
+  countdown = stringThree.toInt();
 
   if (totalSeconds == 0) {
     segdisp.showNro(0);
@@ -171,13 +171,13 @@ void timerOn() {
 
   while(millis() < time_now + period) {
     //wait approx [period] ms
-    segdisp.showNro(laskenta);
+    segdisp.showNro(countdown);
     //Serial.println(laskenta);
   }
 }
 
 // ------------------------------------------------------------------
-// MAIN LOOP
+// OHJELMAN PÄÄLUUPPI / MAIN LOOP
 // ------------------------------------------------------------------
 
 void loop() {
@@ -192,7 +192,7 @@ void loop() {
   if (timerMsg == 2) {
     timerOn();
   }
-  if (outputC.pressed()) {
+  if (rotBTN.pressed()) {
     timerMsg = 1;
   }
 }
