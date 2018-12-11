@@ -1,1 +1,1 @@
-# KitchenTimer
+# KitchenTimer powered by Arduino
