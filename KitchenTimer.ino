@@ -1,34 +1,46 @@
 /*
  * 
- * Kitchen Timer v0.1
+ * Kitchen Timer
  * by Tonza
  * 
  */
 
 // ------------------------------------------------------------------
-// VAADITUT KIRJASTOT / REQUIRED LIBRARIES
+// VAADITUT KIRJASTOT | REQUIRED LIBRARIES
 // ------------------------------------------------------------------
 
+// Segmenttinäytön kirjasto | Library for 7-segment display
+// https://github.com/tonzik/libSeg47
 #include <libSeg47.h>
-#include <Button.h>
+
+// RTTTL äänien kirjasto | Library for RTTTL Tones
+// https://github.com/tonzik/libRTTTL_Tunes
+#include <libRTTTL_Tunes.h>
+
+// Painikkeelle kirjasto | Library for Button function
+// https://github.com/tonzik/libButton
+#include <libButton.h>
 
 // ------------------------------------------------------------------
-// ALKUMÄÄRITYKSET
+// ALKUMÄÄRITYKSET | CONFIGURATION
 // ------------------------------------------------------------------
 
-// 4-osaisen segmenttinäytön asetukset / 4-digit 7-segment display pins
+// 4-osaisen segmenttinäytön asetukset | 4-digit 7-segment display settings
 libSeg47 segdisp(9,8, 7, 6, 13, 12, 11, 10, 5, 5);
 
-// Pulssi-enkooderin asetukset / Rotary encoder pins
+// Pulssi-enkooderin asetukset | Rotary encoder settings
 #define rotCLK 2 // CLK
 #define rotDT 3 // DT
 Button rotBTN (4, 2000); // BTN
 
-// Muut asetukset / Other settings
 int dtState;
 int clkState;
 int dtLastState;
 
+// Kauttimen asetukset | Buzzer settings
+libRTTTL_Tunes player(A0);
+
+// Muut asetukset // Other settings
 int timeset = 0;
 int counter = 0;
 int timerMsg = 0;
@@ -36,10 +48,11 @@ int totalSeconds = 0;
 int minutes = 0;
 int seconds = 0;
 int countdown = 0;
+int pause = 0;
 
 String stringOne, stringTwo, stringThree, stringZero;
 
-int period = 1000;
+int period = 1000; // Ajastimen päivitysväli 1s | Timer interval 1s
 unsigned long time_now = 0;
 
 // ------------------------------------------------------------------
@@ -47,49 +60,45 @@ unsigned long time_now = 0;
 // ------------------------------------------------------------------
 
 void setup() {
-  // put your setup code here, to run once:
-
   pinMode(rotCLK, INPUT); // Rotary encoder CLK
   pinMode(rotDT, INPUT); // Rotary encoder DT
-  Serial.begin(9600);
-  Serial.println("Program starts");
-  
 }
 
 // ------------------------------------------------------------------
-// AJASTIMEN ASETUS / SET TIMER
+// AJASTIMEN ASETUS | SET TIMER
 // ------------------------------------------------------------------
 
 void setKitchenTimer() {
   segdisp.showNro(timeset);
   dtState = digitalRead(rotDT);
   clkState = digitalRead(rotCLK);
-  
+
+  // Luetaan pulssi-enkooderin muutos | Read the pulse encoder change
   if ((dtState != dtLastState)&&(dtState==LOW)) {
     if (clkState == LOW) { 
-      counter = counter + 30;
+      counter = counter + 15; // Myötäpäivään lisätään | Clockwise increases
     } 
     else {
-      counter = counter - 30;
+      counter = counter - 15; // Vastapäivään vähennetään | Counterclockwise decreases
     }
 
     if (counter < 0) {
-      counter = 0;
+      counter = 0; // Ei sallita negatiivista lukua | Negative number is not allowed
     }
 
     timeset = calcSecMin(counter);
   }
   dtLastState = dtState;
 
+  // Käynnistetään ajastin | Start the timer
   if (rotBTN.pressed()) {
-    Serial.println("ajastin painettu");
     totalSeconds = counter + 1;
     timerMsg = 2;
   }
 }
 
 // ------------------------------------------------------------------
-// MUUTETAAN AIKA MINUUTEIKSI JA SEKUNNEIKSI / CALCULATE TOTAL SECONDS TO MINUTES AND SECONDS
+// MUUTETAAN AIKA MINUUTEIKSI JA SEKUNNEIKSI | CALCULATE TOTAL SECONDS TO MINUTES AND SECONDS
 // ------------------------------------------------------------------
 
 int calcSecMin(int totalSeconds) {
@@ -105,6 +114,8 @@ int calcSecMin(int totalSeconds) {
   minutes = totalSeconds / 60;
   seconds = totalSeconds % 60;
 
+  // Jos luku on pienempi kuin 10, nolla lisätään | If the number is less than 10, zero is added
+  // Esimerkiksi | For example 2.5 - > 02.05
   if (seconds < 10) {
     stringSec = stringZero + seconds;
   } else {
@@ -119,12 +130,11 @@ int calcSecMin(int totalSeconds) {
 
   stringTot = stringMin + stringSec;
   calc = stringTot.toInt();
-  Serial.println(stringTot);
   return calc;
 }
 
 // ------------------------------------------------------------------
-// AJASTIMEN DEMO-MOODI / TIMER DEMO
+// AJASTIMEN DEMO-MOODI | TIMER DEMO MODE
 // ------------------------------------------------------------------
 
 void timerDemo() {
@@ -133,36 +143,50 @@ void timerDemo() {
 }
 
 // ------------------------------------------------------------------
-// AJASTIN PÄÄLLÄ / TIMER ON
+// AJASTIN PÄÄLLÄ | TIMER ON
 // ------------------------------------------------------------------
 
 void timerOn() {
   time_now = millis();
-  totalSeconds --;
+
+  // Tarkistetaan onko paussi on/off | Check whether the pause is on / off
+  // Paussi on päällä | Pause is on
+  if (pause == 1) {
+    totalSeconds = totalSeconds + 0; // Näytön lukema ei päivity | The screen will not update
+  }
+  // Paussi ei ole päällä | Pause is off
+  else {
+     totalSeconds --; //  Näytön lukema päivittyy | The screen is updated
+  }
+  
   minutes = totalSeconds / 60;
   seconds = totalSeconds % 60;
   stringZero = "0";
   stringOne = "";
   stringTwo = "";
   stringThree = "";
-  
-    if (seconds < 10) {
-      stringOne = stringZero + seconds;
-    }else{
-      stringOne = seconds;
-    }
 
-    if (minutes < 10) {
-      stringTwo = stringZero + minutes;
-    }else{
-      stringTwo = minutes;
-    }
+  // Jos luku on pienempi kuin 10, nolla lisätään | If the number is less than 10, zero is added
+  // Esimerkiksi | For example 2.5 - > 02.05
+  if (seconds < 10) {
+    stringOne = stringZero + seconds;
+  }else{
+    stringOne = seconds;
+  }
+
+  if (minutes < 10) {
+    stringTwo = stringZero + minutes;
+  }else{
+  stringTwo = minutes;
+  }
   
   stringThree = stringTwo + stringOne;
   countdown = stringThree.toInt();
 
+  // Ajastus on päättynyt | The timer has run out
   if (totalSeconds == 0) {
     segdisp.showNro(0);
+    player.playTuneNumber(1);
   }
 
   if (totalSeconds == -5) {
@@ -170,29 +194,43 @@ void timerOn() {
   }
 
   while(millis() < time_now + period) {
-    //wait approx [period] ms
+    // Päivitä näyttö 1s välein | Update the display every 1s
     segdisp.showNro(countdown);
-    //Serial.println(laskenta);
+
+    // Ajastimen paussi - on/off | Timer pause - on/off
+    if (rotBTN.pressed() & totalSeconds > 0) {
+      if (pause == 0) {
+        pause = 1;
+      }else{
+        pause = 0;
+      }
+    }
   }
 }
 
 // ------------------------------------------------------------------
-// OHJELMAN PÄÄLUUPPI / MAIN LOOP
+// OHJELMAN PÄÄLUUPPI | MAIN LOOP
 // ------------------------------------------------------------------
 
 void loop() {
-  // put your main code here, to run repeatedly:
+
+  // timerMsg = 0 | Ajastimen demo-moodi  | Timer demo mode
+  // timerMsg = 1 | Ajastimen asetus      | Set timer
+  // timerMsg = 2 | Ajastin on päällä     | Timer is on
 
   if (timerMsg == 0) {
     timerDemo();
   }
+  
   if (timerMsg == 1) {
     setKitchenTimer();
   }
+  
   if (timerMsg == 2) {
     timerOn();
   }
-  if (rotBTN.pressed()) {
+  
+  if (rotBTN.pressed() && timerMsg == 0) {
     timerMsg = 1;
   }
 }
