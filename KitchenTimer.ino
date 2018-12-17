@@ -96,10 +96,10 @@ void setKitchenTimer() {
   // Luetaan pulssi-enkooderin muutos | Read the pulse encoder change
   if ((dtState != dtLastState)&&(dtState==LOW)) {
     if (clkState == LOW) { 
-      counter = counter + 15; // Myötäpäivään lisätään | Clockwise increases
+      counter = counter + 30; // Myötäpäivään lisätään | Clockwise increases
     } 
     else {
-      counter = counter - 15; // Vastapäivään vähennetään | Counterclockwise decreases
+      counter = counter - 30; // Vastapäivään vähennetään | Counterclockwise decreases
     }
 
     if (counter < 0) {
