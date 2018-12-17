@@ -1,1 +1,1 @@
-# KitchenTimer powered by Arduino
+# KitchenTimer - Keittiöajastin Arduinolla
