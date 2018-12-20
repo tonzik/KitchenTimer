@@ -31,7 +31,7 @@ libSeg47 segdisp(9,8, 7, 6, 13, 12, 11, 10, 5, 5);
 // Pulssi-enkooderin asetukset | Rotary encoder settings
 #define rotCLK 2 // CLK
 #define rotDT 3 // DT
-Button rotBTN (4, 2000); // BTN
+Button rotBTN (4, 3000); // BTN
 
 int dtState;
 int clkState;
@@ -59,6 +59,8 @@ const char s15[] PROGMEM = "Smoke:d=4,o=5,b=125:32p,c,d#,f.,c,d#,8f#,f,p,c,d#,f.
 const char s16[] PROGMEM = "ComeAs:d=4,o=6,b=50:32f.5,32f#.5,16g.5,32a#.5,32g.5,32a#.5,32g.5,32g.5,32f#.5,32f.5,32c.,32f.5,16f.5,32c.,32f.5,32f#.5,16g.5,32a#.5,32g.5,32a#.5,32g.5,32g.5,32f#.5,32f.5,32c.,32f.5,16f.5,32c.";
 
 char buffer[512]; // make sure this is large enough for the largest string it must hold
+long randomNumber;
+const char *const string_table[] PROGMEM = { s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16 };
 
 // Muut asetukset // Other settings
 int timeset = 0;
@@ -82,6 +84,7 @@ unsigned long time_now = 0;
 void setup() {
   pinMode(rotCLK, INPUT); // Rotary encoder CLK
   pinMode(rotDT, INPUT); // Rotary encoder DT
+  randomSeed(analogRead(5));
 }
 
 // ------------------------------------------------------------------
@@ -163,6 +166,16 @@ void timerDemo() {
 }
 
 // ------------------------------------------------------------------
+// SOITETAAN MERKKIÄÄNI / PLAY TONE
+// ------------------------------------------------------------------
+
+void playTone() {
+  randomNumber = random(0, 18);
+  strcpy_P(buffer, (char*)pgm_read_word(&(string_table[randomNumber])));    // Copy song from progmem to buffer
+  player.play_RTTTL(buffer);
+}
+
+// ------------------------------------------------------------------
 // AJASTIN PÄÄLLÄ | TIMER ON
 // ------------------------------------------------------------------
 
@@ -206,9 +219,7 @@ void timerOn() {
   // Ajastus on päättynyt | The timer has run out
   if (totalSeconds == 0) {
     segdisp.showNro(0);
-    
-    strcpy_P(buffer, (char*)s0);    // Copy song from progmem to buffer
-    player.play_RTTTL(buffer);
+    playTone();
   }
 
   if (totalSeconds == -5) {
@@ -226,6 +237,12 @@ void timerOn() {
       }else{
         pause = 0;
       }
+    }
+
+    // Ajastimen keskeytys | Cancel timer
+    if (rotBTN.kept() & pause == 1) {
+      pause = 0;
+      timerMsg = 0;
     }
   }
 }
